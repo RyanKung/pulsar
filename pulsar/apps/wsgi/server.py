@@ -26,12 +26,12 @@ from pulsar import (reraise, HttpException, ProtocolError, isawaitable,
                     BadRequest)
 from pulsar.utils.pep import native_str
 from pulsar.utils.httpurl import (Headers, has_empty_content, http_parser,
-                                  iri_to_uri, http_chunks)
+                                  iri_to_uri, http_chunks, tls_schemes)
 
 from pulsar.async.protocols import ProtocolConsumer
 
 from .utils import (handle_wsgi_error, wsgi_request, HOP_HEADERS,
-                    log_wsgi_info, LOGGER)
+                    log_wsgi_info, LOGGER, get_logger)
 from .formdata import http_protocol, HttpBodyReader
 from .wrappers import FileWrapper, close_object
 
@@ -129,6 +129,8 @@ def wsgi_environ(stream, parser, request_headers, address, client_address,
         if header == 'x-forwarded-for':
             forward = value
         elif header == "x-forwarded-protocol" and value == "ssl":
+            url_scheme = "https"
+        elif header == "x-forwarded-proto" and value in tls_schemes:
             url_scheme = "https"
         elif header == "x-forwarded-ssl" and value == "on":
             url_scheme = "https"
@@ -411,7 +413,7 @@ class HttpServerResponse(ProtocolConsumer):
                     else:
                         time_in_loop = loop.time() - start
                         if time_in_loop > MAX_TIME_IN_LOOP:
-                            self.logger.debug(
+                            get_logger(environ).debug(
                                 'Released the event loop after %.3f seconds',
                                 time_in_loop)
                             await sleep(0.1, loop=self._loop)
@@ -433,11 +435,12 @@ class HttpServerResponse(ProtocolConsumer):
                     done = False
                     exc_info = sys.exc_info()
             else:
-                log_wsgi_info(self.logger.info, environ, self.status)
+                logger = get_logger(environ)
+                log_wsgi_info(logger.info, environ, self.status)
                 self.finished()
                 if not self.keep_alive:
-                    self.logger.debug('No keep alive, closing connection %s',
-                                      self.connection)
+                    logger.debug('No keep alive, closing connection %s',
+                                 self.connection)
                     self.connection.close()
             finally:
                 close_object(response)

@@ -253,9 +253,14 @@ class SocketServer(pulsar.Application):
         addresses = []
         loop = monitor._loop
         for sock in sockets:
-            addresses.append(sock.getsockname())
+            address = sock.getsockname()
+            addresses.append(address)
+            self.logger.debug('Created socket %r', address)
             fd = sock.fileno()
-            loop.remove_reader(fd)
+            try:
+                loop.remove_reader(fd)
+            except NotImplementedError:
+                pass
         monitor.sockets = sockets
         self.cfg.addresses = addresses
 

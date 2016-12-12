@@ -5,7 +5,7 @@ import asyncio
 import pickle
 from time import time
 from collections import OrderedDict
-from multiprocessing import current_process
+from multiprocessing import Process, current_process
 from multiprocessing.reduction import ForkingPickler
 
 import pulsar
@@ -23,7 +23,7 @@ from .protocols import TcpServer
 from .actor import Actor
 from .consts import (ACTOR_STATES, ACTOR_TIMEOUT_TOLE, MIN_NOTIFY, MAX_NOTIFY,
                      MONITOR_TASK_PERIOD)
-from .process import ProcessMixin, signal_from_exitcode
+from .process import ProcessMixin
 
 __all__ = ['arbiter']
 
@@ -393,24 +393,29 @@ class MonitorMixin:
                 for worker in self.managed_actors.values():
                     age = worker.impl.age
                     if age < kage:
-                        w, kage = w, age
+                        w, kage = worker, age
                 self.manage_actor(monitor, w, True)
 
     def _close_actors(self, monitor):
         #
         # Close all managed actors at once and wait for completion
-        sig = signal_from_exitcode(monitor.exit_code)
-        for worker in self.managed_actors.values():
-            worker.stop(sig)
-
         waiter = create_future(monitor._loop)
+        if self.managed_actors:
+            sig = monitor.exit_code
+            for worker in self.managed_actors.values():
+                worker.stop(sig)
 
-        def _check(_, **kw):
-            if not self.managed_actors:
-                monitor.remove_callback('periodic_task', _check)
-                waiter.set_result(None)
+            waiter = create_future(monitor._loop)
 
-        monitor.bind_event('periodic_task', _check)
+            def _check(_, **kw):
+                if not self.managed_actors:
+                    monitor.remove_callback('periodic_task', _check)
+                    waiter.set_result(None)
+
+            monitor.bind_event('periodic_task', _check)
+        else:
+            waiter.set_result(None)
+
         return waiter
 
     def _remove_actor(self, monitor, actor, log=True):
@@ -736,7 +741,24 @@ class ActorThread(Concurrency, Thread):
         run_actor(self)
 
 
-class ActorProcess(ProcessMixin, Concurrency):
+class ActorMultiProcess(ProcessMixin, Concurrency, Process):
+    '''Actor on a Operative system process.
+    Created using the python multiprocessing module.
+    '''
+    def run(self):  # pragma    nocover
+        # The coverage for this process has not yet started
+        try:
+            from asyncio.events import _set_running_loop
+            _set_running_loop(None)
+        except ImportError:
+            pass
+        run_actor(self)
+
+    def kill(self, sig):
+        system.kill(self.pid, sig)
+
+
+class ActorSubProcess(ProcessMixin, Concurrency):
     '''Actor on a Operative system process.
     '''
     process = None
@@ -800,7 +822,8 @@ concurrency_models = {
     'monitor': MonitorConcurrency,
     'coroutine': ActorCoroutine,
     'thread': ActorThread,
-    'process': ActorProcess
+    'process': ActorMultiProcess,
+    'subprocess': ActorSubProcess
 }
 
 

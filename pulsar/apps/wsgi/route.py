@@ -92,9 +92,9 @@ _converter_args_re = re.compile(r'''
 
 
 _PYTHON_CONSTANTS = {
-    'None':     None,
-    'True':     True,
-    'False':    False
+    'None': None,
+    'True': True,
+    'False': False
 }
 
 
@@ -594,10 +594,10 @@ def get_converter(name, parameters):
 
 #: the default converter mapping for the map.
 _CONVERTERS = {
-    'default':          StringConverter,
-    'string':           StringConverter,
-    'any':              AnyConverter,
-    'path':             PathConverter,
-    'int':              IntegerConverter,
-    'float':            FloatConverter
+    'default': StringConverter,
+    'string': StringConverter,
+    'any': AnyConverter,
+    'path': PathConverter,
+    'int': IntegerConverter,
+    'float': FloatConverter
 }

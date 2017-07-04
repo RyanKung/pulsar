@@ -265,8 +265,7 @@ class Router(metaclass=RouterType):
                                             handler=handler, **rparameters))
 
     def router(self, rule, method):
-        '''A decorator for map `function` to :class:`.Router`,
-        and add as child of current :class:`.Router`.
+        '''Map a function to :class:`Router` and add to the :attr:`routes` list.
 
         Typical usage:
 

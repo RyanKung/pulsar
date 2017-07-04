@@ -205,8 +205,8 @@ class route:
     def order(self):
         return self.creation_count if self.position is None else self.position
 
-    def __call__(self, callable):
-        bits = callable.__name__.split('_')
+    def __call__(self, fn):
+        bits = fn.__name__.split('_')
         method = None
         if len(bits) > 1:
             m = bits[0].upper()
@@ -221,9 +221,9 @@ class route:
         else:
             method = method.lower()
         rule = Route(self.rule or name, defaults=self.defaults, is_re=self.re)
-        callable.rule_method = rule_info(rule, method, self.parameters,
-                                         self.position, self.order)
-        return callable
+        fn.rule_method = rule_info(rule, method, self.parameters,
+                                   self.position, self.order)
+        return fn
 
 
 class Route:
@@ -257,6 +257,7 @@ class Route:
 
     .. _werkzeug: https://github.com/mitsuhiko/werkzeug
     '''
+
     def __init__(self, rule, defaults=None, is_re=False):
         rule = remove_double_slash('/%s' % rule)
         self.defaults = defaults if defaults is not None else {}
@@ -407,7 +408,7 @@ class Route:
             rule = rule[:-1]
         if not rule:
             return Route('/'), None
-        bits = ('/'+rule).split('/')
+        bits = ('/' + rule).split('/')
         last = Route(bits[-1] if self.is_leaf else bits[-1] + '/')
         if len(bits) > 1:
             return Route('/'.join(bits[:-1]) + '/'), last
@@ -499,6 +500,7 @@ class NumberConverter(BaseConverter):
 
     :internal:
     """
+
     def __init__(self, fixed_digits=0, min=None, max=None):
         self.fixed_digits = fixed_digits
         self.min = min

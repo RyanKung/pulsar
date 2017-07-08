@@ -264,19 +264,21 @@ class Router(metaclass=RouterType):
             self.add_child(self.make_router(rule, method=method,
                                             handler=handler, **rparameters))
 
-    def router(self, rule, method):
+    def router(self, rule, methods):
         '''Map a function to :class:`Router` and add to the :attr:`routes` list.
 
         Typical usage:
 
         app = WsgiApplication('/')
 
-        @app.router('/hello', method='post')
+        @app.router('/hello', methods=['post'])
         def world(request):
             return wsgi.WsgiResponse(200, 'world')
         '''
         def handler(fn):
-            self.add_child(self.make_router(rule, method, fn))
+            for method in methods:
+                self.add_child(
+                    self.make_router(rule, method.lower(), fn))
             return fn
         return handler
 

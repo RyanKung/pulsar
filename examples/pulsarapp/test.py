@@ -8,7 +8,7 @@ from pulsar.apps.test import dont_run_with_thread
 from examples.pulsarapp.manage import server
 
 
-class TestHelloWorldThread(unittest.TestCase):
+class TestPulsarApp(unittest.TestCase):
     app_cfg = None
     concurrency = 'thread'
 
@@ -72,5 +72,5 @@ class TestHelloWorldThread(unittest.TestCase):
 
 
 @dont_run_with_thread
-class TestHelloWorldProcess(TestHelloWorldThread):
+class TestPulsarAppProcess(TestPulsarApp):
     concurrency = 'process'
